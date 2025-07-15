@@ -658,7 +658,6 @@ TTS:
     output_dir: tmp/
     appkey: 你的阿里云智能语音交互服务项目Appkey
     token: 你的阿里云智能语音交互服务AccessToken，临时的24小时，要长期用下方的access_key_id，access_key_secret
-    voice: xiaoyun
     access_key_id: 你的阿里云账号access_key_id
     access_key_secret: 你的阿里云账号access_key_secret
 
@@ -769,3 +768,16 @@ TTS:
     access_token: "U4YdYXVfpwWnk2t5Gp822zWPCuORyeJL"
     voice: "OUeAo1mhq6IBExi"
     output_dir: tmp/
+mqtt:
+  broker_host: "api.shyunzhiyi.cn"
+  broker_port: 1883
+  username: "client_a"
+  password: "J4h58G8l"
+  upstream_topic: "devices/up/+"
+  downstream_topic_tpl: "devices/down/{}"
+  server_client_id_prefix: "server-"
+
+udp:
+  host: "0.0.0.0"
+  port: 12345
+  server_public_ip: "127.0.0.1"

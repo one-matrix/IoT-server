@@ -57,10 +57,15 @@ class ConnectionHandler:
         _memory,
         _intent,
         server=None,
+        session_id=None,
     ):
         self.common_config = config
         self.config = copy.deepcopy(config)
-        self.session_id = str(uuid.uuid4())
+        
+        self.session_id = session_id
+        if not session_id:
+            self.session_id = str(uuid.uuid4())
+       
         self.logger = setup_logging()
         self.server = server  # 保存server实例的引用
 
@@ -202,6 +207,7 @@ class ConnectionHandler:
 
             try:
                 async for message in self.websocket:
+                    # print(f"Received message: {message}")
                     await self._route_message(message)
             except websockets.exceptions.ConnectionClosed:
                 self.logger.bind(tag=TAG).info("客户端断开连接")

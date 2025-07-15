@@ -1,0 +1,21 @@
+# .env file
+
+# MQTT Broker Configuration
+MQTT_BROKER_HOST=121.41.41.74
+MQTT_BROKER_PORT=1883
+# 主题说明: `devices/+/control`
+# `+` 是一个通配符，代表了唯一的 `device_id`
+# 服务器将订阅此主题来接收所有设备的控制消息
+MQTT_SUB_TOPIC=devices/+/control
+# 服务器将发布到此主题格式，响应特定设备
+MQTT_PUB_TOPIC_FORMAT=devices/{device_id}/control/response
+
+# UDP Server Configuration
+# 0.0.0.0 表示监听所有网络接口
+UDP_SERVER_HOST=0.0.0.0
+UDP_SERVER_PORT=8884
+# 这是告诉客户端应该连接到哪个IP，请替换为服务器的公网或局域网IP
+UDP_PUBLIC_IP=127.0.0.1
+
+# Session Configuration
+SESSION_TIMEOUT_SECONDS=300
