@@ -1,3 +1,6 @@
+
+docker build -t lighttomorrow/iotserver:20250701501 .
+
 改动点：
 main\xiaozhi-server\app
 main\xiaozhi-server\core\providers\asr\yzy_asr.py
@@ -39,8 +42,7 @@ pydantic
 pydantic-settings
 cryptography
 python-dotenv
-aiortc
-paho-mqtt
+
 
 https://github.com/78/xiaozhi-mqtt-gateway/blob/c5e3235df8db8f06d1710074ec10e870159e0844/app.js#L350
 
