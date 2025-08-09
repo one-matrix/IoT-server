@@ -1,5 +1,6 @@
 import asyncio
 import websockets
+from fastapi import WebSocket
 from config.logger import setup_logging
 from core.connection import ConnectionHandler
 from config.config_loader import get_config_from_api
@@ -159,6 +160,73 @@ class CustomSocket:
         self._closed = True
     def __aiter__(self):
         return self
+    async def __anext__(self):
+        if self._closed and self._messages.empty():
+            raise StopAsyncIteration
+        msg = await self._messages.get()
+        return msg
+
+from types import SimpleNamespace
+from fastapi import WebSocket
+import asyncio
+from urllib.parse import parse_qs, urlparse
+
+class WebSocketAdapter:
+    def __init__(self, websocket: WebSocket):
+        self.websocket = websocket
+        self.request = SimpleNamespace()
+
+        # 先复制原 headers（转成可变 dict）
+        headers = dict(websocket.headers)
+
+        # 解析 query 参数
+        query_params = parse_qs(urlparse(str(websocket.url)).query)
+
+        # 如果 headers 中没有 device-id 或为空，从 query 里取
+        if not headers.get("device-id") and "device-id" in query_params:
+            headers["device-id"] = query_params["device-id"][0]
+        if not headers.get("client-id") and "client-id" in query_params:
+            headers["client-id"] = query_params["client-id"][0]
+
+        # 存回 request.headers
+        self.request.headers = headers
+
+        self.remote_address = ["127.0.0.1"]
+        self._messages = asyncio.Queue()
+        self._closed = False
+    async def send(self, message):
+        if isinstance(message, str):
+            print(f"WebSocketAdapter send to client {message}")
+            await self.websocket.send_text(message)
+        elif isinstance(message, bytes):
+            print(f"WebSocketAdapter send to client {len(message)}")
+            await self.websocket.send_bytes(message)
+        else:
+            # 如果是 dict/obj，就转 JSON
+            import json
+            await self.websocket.send_text(json.dumps(message))
+    async def recv(self) -> str:
+        message = await self.websocket.receive()
+        print(f"WebSocketAdapter recv from client {len(message)}")
+        if message["type"] == "websocket.receive":
+            if "text" in message:
+                print(f"WebSocketAdapter recv from client text {message}")
+                msg = await self.websocket.receive_text()
+                await self._messages.put(msg)
+            elif "bytes" in message:
+                print(f"WebSocketAdapter recv from client bytes ")
+                msg = await self.websocket.receive_bytes()
+                await self._messages.put(msg)
+    async def close(self, code: int = 1000):
+        self._closed = True
+        await self.websocket.close(code=code)
+
+    async def feed_message(self, msg):
+        await self._messages.put(msg)
+
+    def __aiter__(self):
+        return self
+
     async def __anext__(self):
         if self._closed and self._messages.empty():
             raise StopAsyncIteration

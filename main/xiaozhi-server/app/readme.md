@@ -74,3 +74,7 @@ MQTT 客户端: paho-mqtt (最流行和稳定的 Python MQTT 库)
 加密: cryptography (用于 AES-CTR 加密/解密)
 
 异步处理: asyncio (Python 原生库，用于构建高性能的 UDP 服务器)
+
+原来的链接 ：
+http://127.0.0.1:8002/xiaozhi/ota/
+ws://127.0.0.1:38005/xiaozhi/v1/
