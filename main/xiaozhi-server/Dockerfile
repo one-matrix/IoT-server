@@ -1,0 +1,29 @@
+# 第一阶段：构建Python依赖
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+COPY requirements.txt .
+
+# 安装Python依赖
+RUN pip install --no-cache-dir -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
+
+# 第二阶段：生产镜像
+FROM python:3.12-slim
+
+WORKDIR /opt/app
+
+# 安装系统依赖
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libopus0 ffmpeg && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# 从构建阶段复制Python包和前端构建产物
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+
+# 复制应用代码
+COPY . .
+
+# 启动应用
+CMD ["python", "main.py"]

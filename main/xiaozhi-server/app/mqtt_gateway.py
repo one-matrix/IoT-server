@@ -128,6 +128,7 @@ class CustomSocket:
         #headers 和 remote_address 没有意义，只是为了兼容
         self.request = SimpleNamespace()
         self.request.headers = {"content-type": "application/json", "host": "127.0.0.1", "device-id": "xiaozhi-device-id0", "client-id": "xiaozhi-client-id0"}
+        self.request.headers["client-id"] = client_id
         self.remote_address = ["127.0.0.1"]
         self._messages = asyncio.Queue()
         self._closed = False
@@ -211,12 +212,18 @@ class WebSocketAdapter:
         if message["type"] == "websocket.receive":
             if "text" in message:
                 print(f"WebSocketAdapter recv from client text {message}")
-                msg = await self.websocket.receive_text()
+                # msg = await self.websocket.receive_text()
+                msg = message["text"]
                 await self._messages.put(msg)
+                return msg
             elif "bytes" in message:
                 print(f"WebSocketAdapter recv from client bytes ")
-                msg = await self.websocket.receive_bytes()
+                #msg = await self.websocket.receive_bytes()
+                msg = message["bytes"]
                 await self._messages.put(msg)
+                return msg
+        elif message["type"] == "websocket.disconnect":
+            self._closed = True
     async def close(self, code: int = 1000):
         self._closed = True
         await self.websocket.close(code=code)

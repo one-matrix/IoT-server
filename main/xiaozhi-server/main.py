@@ -19,7 +19,7 @@ from config.config_loader import get_config_from_api
 from core.utils.modules_initialize import initialize_modules
 from core.connection import ConnectionHandler
 from core.utils.util import check_vad_update, check_asr_update
-
+#from core.websocket_server import WebSocketServer
 logger = setup_logging()
 config = load_config()
 
@@ -34,6 +34,13 @@ async def lifespan(app: FastAPI):
     server = MqttServer(loop)
     try:
         server.start()
+        # auth_key = config.get("manager-api", {}).get("secret", "")
+        # if not auth_key or len(auth_key) == 0 or "你" in auth_key:
+        #     auth_key = str(uuid.uuid4().hex)
+        # config["server"]["auth_key"] = auth_key
+        # # 启动 WebSocket 服务器
+        # ws_server = WebSocketServer(config)
+        # ws_task = asyncio.create_task(ws_server.start())
         # 保持主线程运行
     except KeyboardInterrupt:
         logger.info("收到关闭信号...")
@@ -61,6 +68,7 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown logic
     # mqtt_client.stop()
+    #ws_task.cancel()
     server.stop()
     print("Application shutting down.")
 
@@ -134,7 +142,7 @@ async def ota_info(request: Request):
             "subscribe_topic": f"devices/down/{client_id}"
         },
         "websocket": {
-            "url": "ws://127.0.0.1:8000/ws/",
+            "url": "ws://127.0.0.1:38030/yzy/ws/",
             "token": "test-token"
         },
         "server_time": {
@@ -152,7 +160,7 @@ async def ota_info(request: Request):
     }
 from app.mqtt_gateway import WebSocketAdapter 
 # --- WebSocket Endpoint ---
-@app.websocket("/ws")
+@app.websocket("/yzy/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket端点，处理客户端连接"""
     # 创建ConnectionHandler实例
@@ -170,10 +178,10 @@ async def websocket_endpoint(websocket: WebSocket):
     ws = WebSocketAdapter(websocket)  # 适配成类似 websockets 库的接口
     websocket.headers.get("authorization")
     try:
+        asyncio.create_task(handler.handle_connection(ws))
         while True:
             msg = await ws.recv()  # 类似 websockets.recv()
             # print(f"收到: {msg}")
-            await handler.handle_connection(ws)
             #await ws.send(f"回显: {msg}")  # 类似 websockets.send()
     except WebSocketDisconnect:
         print("客户端断开连接")
@@ -225,4 +233,4 @@ async def websocket_endpoint(websocket: WebSocket):
 
 if __name__ == "__main__":
     # Ensure a directory for recordings exists
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=38005)
