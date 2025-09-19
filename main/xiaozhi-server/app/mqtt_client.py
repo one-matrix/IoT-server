@@ -85,8 +85,8 @@ class MQTTClient:
 
     def connect(self):
         """连接到 MQTT Broker。"""
-        print(f"Connecting to MQTT Broker at {settings.mqtt_broker_host}:{settings.mqtt_broker_port}")
-        self.client.connect(settings.mqtt_broker_host, settings.mqtt_broker_port, 60)
+        print(f"Connecting to MQTT Broker at {settings.mqtt_endpoint}:{settings.mqtt_port}")
+        self.client.connect(settings.mqtt_endpoint, settings.mqtt_port, 60)
 
     def start(self):
         """以非阻塞方式启动 MQTT 客户端循环。"""

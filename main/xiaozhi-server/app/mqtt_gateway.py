@@ -129,6 +129,8 @@ class CustomSocket:
         self.request = SimpleNamespace()
         self.request.headers = {"content-type": "application/json", "host": "127.0.0.1", "device-id": "xiaozhi-device-id0", "client-id": "xiaozhi-client-id0"}
         self.request.headers["client-id"] = client_id
+        self.request.path=""
+        
         self.remote_address = ["127.0.0.1"]
         self._messages = asyncio.Queue()
         self._closed = False
@@ -188,10 +190,11 @@ class WebSocketAdapter:
             headers["device-id"] = query_params["device-id"][0]
         if not headers.get("client-id") and "client-id" in query_params:
             headers["client-id"] = query_params["client-id"][0]
-
+        
         # 存回 request.headers
         self.request.headers = headers
-
+        self.request.path=""
+        
         self.remote_address = ["127.0.0.1"]
         self._messages = asyncio.Queue()
         self._closed = False

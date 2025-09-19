@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 # 服务端监听的 MQTT 主题 (使用通配符+来匹配所有客户端)
 # 假设客户端的 publish_topic 是 "devices/up/{client_id}"
 # 假设客户端的 subscribe_topic 是 "devices/down/{client_id}"
-MQTT_BROKER_HOST = config.get("mqtt", {}).get("broker_host", "127.0.0.1")
-MQTT_BROKER_PORT = config.get("mqtt", {}).get("broker_port", 1883)
+MQTT_Endpoint = config.get("mqtt", {}).get("endpoint", "127.0.0.1")
+MQTT_PORT = config.get("mqtt", {}).get("port", 1883)
 MQTT_USERNAME = config.get("mqtt", {}).get("username", "")
 MQTT_PASSWORD = config.get("mqtt", {}).get("password", "")
 SERVER_CLIENT_ID = f'{config.get("mqtt", {}).get("server_client_id_prefix", "server-")}{uuid.uuid4()}'
@@ -70,8 +70,8 @@ class MqttServer:
         self.mqtt_client.on_disconnect = self._on_mqtt_disconnect
 
         try:
-            logger.info(f"正在连接到 MQTT Broker: {MQTT_BROKER_HOST}:{MQTT_BROKER_PORT}")
-            self.mqtt_client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, 60)
+            logger.info(f"正在连接到 MQTT Broker: {MQTT_Endpoint}:{MQTT_PORT}")
+            self.mqtt_client.connect(MQTT_Endpoint, MQTT_PORT, 60)
             self.mqtt_client.loop_start()
         except Exception as e:
             logger.error(f"连接 MQTT Broker 失败: {e}", exc_info=True)

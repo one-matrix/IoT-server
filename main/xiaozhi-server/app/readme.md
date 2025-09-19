@@ -21,8 +21,8 @@ main\xiaozhi-server\core\connection.py
    
 config.myl 增加：
 mqtt:
-  broker_host: "api.shyunzhiyi.cn"
-  broker_port: 1883
+  endpoint: "api.shyunzhiyi.cn"
+  port: 1883
   username: "client_a"
   password: "J4h58G8l"
   upstream_topic: "devices/up/+"

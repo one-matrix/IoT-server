@@ -139,18 +139,25 @@ async def ota_info(request: Request):
     now = int(time.time() * 1000)
     timezone_offset = 480
     mqtt_config = config.get("mqtt", {})
+    # 获取endpoint和port，组合成IP:端口格式
+    mqtt_endpoint = mqtt_config.get("endpoint", "192.168.0.1")
+    mqtt_port = mqtt_config.get("port", "1883")
+    SERVER_CLIENT_ID = f'{mqtt_config.get("server_client_id_prefix", "server-")}{uuid.uuid4()}'
+    MQTT_UPSTREAM_TOPIC = mqtt_config.get("upstream_topic", "devices/up/+")
+    MQTT_DOWNSTREAM_TOPIC_TPL = mqtt_config.get("downstream_topic_tpl", "devices/down/{}")
+
     return {
         "mqtt": {
-            "endpoint": mqtt_config.get("endpoint", "api.shyunzhiyi.cn"),
-            "port": mqtt_config.get("port", "1883"),
+            "endpoint": f"{mqtt_endpoint}:{mqtt_port}",
+            # "port": mqtt_port,
             "client_id":f"{client_id}",
             "username": mqtt_config.get("username", "client_a"),
             "password": mqtt_config.get("password", "J4h58G8l"),
-            "publish_topic": f"devices/up/{client_id}",
-            "subscribe_topic": f"devices/down/{client_id}"
+            "publish_topic": MQTT_UPSTREAM_TOPIC.replace("+", "")+client_id,
+            "subscribe_topic": MQTT_DOWNSTREAM_TOPIC_TPL.format(client_id)
         },
         "websocket": {
-            "url": "ws://127.0.0.1:38030/yzy/ws/",
+            "url": "wss://iottest.shyunzhiyi.cn/yzy/ws",
             "token": "test-token"
         },
         "server_time": {
@@ -164,6 +171,16 @@ async def ota_info(request: Request):
         "parsed_headers": {
             "Device-Id": device_id,
             "Client-Id": client_id
+        },
+        "server_time": {
+            "timestamp": int(time.time() * 1000),       # 服务器时间戳（毫秒）
+            "timeZone": "Asia/Shanghai",       #时区标识
+            "timezone_offset": 480             # 时区偏移量（分钟）
+        },
+        "activation": {
+            "code": "460609",                  #激活码
+            "message": "460609",  # 激活信息（含URL和激活码）
+            "challenge": device_id   # 设备挑战码/标识符
         },
     }
 from app.mqtt_gateway import WebSocketAdapter 

@@ -3,8 +3,8 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # MQTT
-    mqtt_broker_host: str
-    mqtt_broker_port: int
+    mqtt_endpoint: str
+    mqtt_port: int
     mqtt_sub_topic: str
     mqtt_pub_topic_format: str
 

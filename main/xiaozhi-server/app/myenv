@@ -1,8 +1,8 @@
 # .env file
 
 # MQTT Broker Configuration
-MQTT_BROKER_HOST=121.41.41.74
-MQTT_BROKER_PORT=1883
+MQTT_Endpoint=121.41.41.74
+MQTT_PORT=1883
 # 主题说明: `devices/+/control`
 # `+` 是一个通配符，代表了唯一的 `device_id`
 # 服务器将订阅此主题来接收所有设备的控制消息
