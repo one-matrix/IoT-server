@@ -306,4 +306,4 @@ async def switch_role(role_name: str):
 
 if __name__ == "__main__":
     # Ensure a directory for recordings exists
-    uvicorn.run(app, host="0.0.0.0", port=38005)
+    uvicorn.run(app, host="0.0.0.0", port=38006)

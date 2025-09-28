@@ -8,14 +8,32 @@ class TTSProvider(TTSProviderBase):
 
     def __init__(self, config, delete_audio_file):
         super().__init__(config, delete_audio_file)
-        self.api_url = config.get("api_url", "http://localhost:5000/api/v1/tts/synthesize-stream")
+        self.api_url = config.get("api_url", "")
         self.voice = config.get("voice", "zh-CN-XiaoxiaoNeural")
         self.model = config.get("model", "cosyvoice")
         self.language = config.get("language", "zh")
         self.pitch = config.get("pitch", 1)
         self.speed = config.get("speed", 1)
-
+ 
     async def text_to_speak(self, text, output_file):
+        # If API URL is not configured, 默认让发送LLM返回的文本，但不生成语音
+        if self.api_url=="":
+            # When API URL is not configured, generate silent audio data
+            # Create minimal valid WAV audio data (silent)
+            silent_wav = (
+                b'RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac'
+                b'\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00'
+            )
+            
+            if output_file:
+                # Write silent WAV data to file
+                with open(output_file, 'wb') as f:
+                    f.write(silent_wav)
+                return output_file
+            else:
+                # Return silent WAV data
+                return silent_wav
+                
         payload = {
             "language": self.language,
             "model": self.model,

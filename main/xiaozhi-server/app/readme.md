@@ -1,3 +1,6 @@
+python -m venv venv
+source .venv/bin/activate  # Linux/Mac
+.venv\Scripts\activate     # Windows
 
 docker build -t lighttomorrow/iotserver:20250701501 .
 
