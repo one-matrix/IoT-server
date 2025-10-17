@@ -22,7 +22,7 @@ namespace IotApi.Controllers
             // In a real implementation, we would check if the voiceprint API is configured
             // For now, we'll just create the voiceprint record
 
-            var voiceprint = new AiVoiceprint
+            var voiceprint = new AgentVoicePrint
             {
                 Id = string.IsNullOrEmpty(dto.Id) ? Guid.NewGuid().ToString("N").Substring(0, 32) : dto.Id,
                 Name = dto.Name,
@@ -40,7 +40,7 @@ namespace IotApi.Controllers
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.AiVoiceprints.Add(voiceprint);
+            _context.AgentVoicePrint.Add(voiceprint);
             await _context.SaveChangesAsync();
 
             return Ok(new { code = 0 });
@@ -50,7 +50,7 @@ namespace IotApi.Controllers
         [HttpPut]
         public async Task<ActionResult<object>> Update(AgentVoicePrintUpdateDto dto)
         {
-            var voiceprint = await _context.AiVoiceprints.FindAsync(dto.Id);
+            var voiceprint = await _context.AgentVoicePrint.FindAsync(dto.Id);
             if (voiceprint == null)
             {
                 return NotFound(new { code = 1, msg = "声纹不存在" });
@@ -78,13 +78,13 @@ namespace IotApi.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult<object>> Delete(string id)
         {
-            var voiceprint = await _context.AiVoiceprints.FindAsync(id);
+            var voiceprint = await _context.AgentVoicePrint.FindAsync(id);
             if (voiceprint == null)
             {
                 return NotFound(new { code = 1, msg = "声纹不存在" });
             }
 
-            _context.AiVoiceprints.Remove(voiceprint);
+            _context.AgentVoicePrint.Remove(voiceprint);
             await _context.SaveChangesAsync();
 
             return Ok(new { code = 0 });
@@ -97,7 +97,7 @@ namespace IotApi.Controllers
             // In a real implementation, we would check if the voiceprint API is configured
             // For now, we'll just return the voiceprint records for the agent
 
-            var voiceprints = await _context.AiVoiceprints
+            var voiceprints = await _context.AgentVoicePrint
                 .Where(v => v.AgentId == id)
                 .ToListAsync();
 

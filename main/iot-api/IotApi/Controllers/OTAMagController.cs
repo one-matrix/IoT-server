@@ -1,6 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using IotApi.Models;
+using IotApi.Services;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace IotApi.Controllers
 {
@@ -160,45 +166,143 @@ namespace IotApi.Controllers
 
         // GET: otaMag/getDownloadUrl/{id}
         [HttpGet("getDownloadUrl/{id}")]
-        public async Task<IActionResult> GetDownloadUrl(string id)
+        public async Task<IActionResult> GetDownloadUrl(string id, [FromServices] IRedisService redisService)
         {
-            // In a real implementation, we would:
-            // 1. Generate UUID
-            // 2. Store ID in Redis with download count tracking
-            // 3. Return the UUID as download identifier
+            var ota = await _context.AiOtas.FindAsync(id);
+            if (ota == null)
+            {
+                return NotFound(new { code = 1, msg = "OTA firmware not found" });
+            }
             
-            // For now, we'll just return a placeholder response
-            var uuid = Guid.NewGuid().ToString();
+            // 生成UUID作为下载标识
+            var uuid = Guid.NewGuid().ToString("N");
+            
+            // 将固件ID存储在Redis中，设置过期时间为1小时
+            var downloadInfo = new
+            {
+                OtaId = id,
+                DownloadCount = 0,
+                MaxDownloadCount = 5 // 最大下载次数限制
+            };
+            
+            await redisService.SetAsync($"ota:download:{uuid}", downloadInfo, 3600); // 1小时过期
+            
             return Ok(new { code = 0, data = uuid, msg = "Success" });
         }
 
         // GET: otaMag/download/{uuid}
         [HttpGet("download/{uuid}")]
-        public async Task<IActionResult> DownloadFirmware(string uuid)
+        public async Task<IActionResult> DownloadFirmware(string uuid, [FromServices] IRedisService redisService)
         {
-            // In a real implementation, we would:
-            // 1. Get firmware ID from Redis using uuid
-            // 2. Check download count
-            // 3. Retrieve firmware file
-            // 4. Return file for download
+            // 从Redis获取下载信息
+            var downloadInfo = await redisService.GetAsync<dynamic>($"ota:download:{uuid}");
+            if (downloadInfo == null)
+            {
+                return NotFound(new { code = 1, msg = "Download link expired or invalid" });
+            }
             
-            // For now, we'll just return a placeholder response
-            return Ok(new { code = 0, msg = "Download firmware" });
+            // 检查下载次数
+            if (downloadInfo.DownloadCount >= downloadInfo.MaxDownloadCount)
+            {
+                return BadRequest(new { code = 1, msg = "Download count exceeded" });
+            }
+            
+            // 获取固件信息
+            var ota = await _context.AiOtas.FindAsync(downloadInfo.OtaId.ToString());
+            if (ota == null)
+            {
+                return NotFound(new { code = 1, msg = "Firmware not found" });
+            }
+            
+            // 检查固件文件路径
+            if (string.IsNullOrEmpty(ota.FirmwarePath))
+            {
+                return NotFound(new { code = 1, msg = "Firmware file path not found" });
+            }
+            
+            // 构建文件路径
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", ota.FirmwarePath);
+            if (!System.IO.File.Exists(filePath))
+            {
+                return NotFound(new { code = 1, msg = "Firmware file not found" });
+            }
+            
+            // 更新下载次数
+            downloadInfo.DownloadCount++;
+            await redisService.SetAsync($"ota:download:{uuid}", downloadInfo, 3600);
+            
+            // 返回文件
+            var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            return File(fileStream, "application/octet-stream", Path.GetFileName(filePath));
         }
 
         // POST: otaMag/upload
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadFirmware()
+        public async Task<IActionResult> UploadFirmware(IFormFile file)
         {
-            // In a real implementation, we would:
-            // 1. Handle file upload
-            // 2. Validate file type and size
-            // 3. Calculate MD5 hash
-            // 4. Save file to storage
-            // 5. Return file path
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new { code = 1, msg = "No file uploaded" });
+            }
             
-            // For now, we'll just return a placeholder response
-            return Ok(new { code = 0, data = "uploadfile/firmware.bin", msg = "Success" });
+            // 验证文件类型和大小
+            var allowedExtensions = new[] { ".bin", ".elf", ".hex" };
+            var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                return BadRequest(new { code = 1, msg = "Invalid file type. Only .bin, .elf, and .hex files are allowed." });
+            }
+            
+            // 限制文件大小为10MB
+            if (file.Length > 10 * 1024 * 1024)
+            {
+                return BadRequest(new { code = 1, msg = "File size exceeds the limit (10MB)" });
+            }
+            
+            try
+            {
+                // 创建上传目录
+                var uploadDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploadfile");
+                if (!Directory.Exists(uploadDir))
+                {
+                    Directory.CreateDirectory(uploadDir);
+                }
+                
+                // 生成唯一文件名
+                var fileName = $"{Guid.NewGuid():N}{fileExtension}";
+                var filePath = Path.Combine(uploadDir, fileName);
+                
+                // 保存文件
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+                
+                // 计算MD5哈希值
+                string md5Hash;
+                using (var md5 = System.Security.Cryptography.MD5.Create())
+                using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    byte[] hashBytes = md5.ComputeHash(fileStream);
+                    md5Hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+                }
+                
+                // 返回相对路径
+                var relativePath = $"uploadfile/{fileName}";
+                
+                return Ok(new { 
+                    code = 0, 
+                    data = relativePath, 
+                    md5 = md5Hash,
+                    size = file.Length,
+                    msg = "Success" 
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { code = 1, msg = $"Upload failed: {ex.Message}" });
+            }
         }
     }
 }

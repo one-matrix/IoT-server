@@ -46,15 +46,26 @@ namespace IotApi.DTOs
         public string VoiceDemo { get; set; }
         
         /// <summary>
+        /// 参考音频路径
+        /// </summary>
+        [StringLength(500, ErrorMessage = "参考音频路径长度不能超过500个字符")]
+        public string ReferenceAudio { get; set; }
+        
+        /// <summary>
+        /// 参考文本
+        /// </summary>
+        public string ReferenceText { get; set; }
+        
+        /// <summary>
         /// 备注
         /// </summary>
         [StringLength(255, ErrorMessage = "备注长度不能超过255个字符")]
         public string Remark { get; set; }
-        
+
         /// <summary>
         /// 排序
         /// </summary>
-        public int? Sort { get; set; }
+        public long Sort { get; set; }
         
         /// <summary>
         /// 创建者

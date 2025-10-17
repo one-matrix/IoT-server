@@ -1,5 +1,5 @@
--- Master Database Initialization Script
--- This script combines all initial data insertion scripts
+-- Consolidated Initial Data Script
+-- This script contains all initial data from the manager-api SQL files
 -- Run this script to initialize the database with all required initial data
 
 -- Initialize Model Providers
@@ -262,3 +262,54 @@ INSERT INTO ai_agent_template (id, agent_code, agent_name, asr_model_id, vad_mod
 - "我知道啦！"
 - 用剧集台词回应：
 - 用户说累 → 「没有困难的救援，只有勇敢的狗狗！」', 'zh', '中文', 5, NULL, NULL, NULL, NULL);
+
+-- Initialize System Parameters
+-- ----------------------------
+
+-- Delete existing system parameters data
+DELETE FROM sys_params WHERE id IN (103, 104, 108, 109, 110, 111, 112, 113, 114, 115, 402, 500, 501, 610, 611, 612, 613);
+
+-- Insert system parameters
+INSERT INTO sys_params (id, param_code, param_value, value_type, param_type, remark, creator, create_date, updater, update_date) VALUES
+(103, 'server.allow_user_register', 'false', 'boolean', 1, '是否允许管理员以外的人注册', NULL, NULL, NULL, NULL),
+(104, 'server.fronted_url', 'http://xiaozhi.server.com', 'string', 1, '下发六位验证码时显示的控制面板地址', NULL, NULL, NULL, NULL),
+(108, 'server.name', 'xiaozhi-esp32-server', 'string', 1, '系统名称', NULL, NULL, NULL, NULL),
+(109, 'server.beian_icp_num', 'null', 'string', 1, 'icp备案号，填写null则不设置', NULL, NULL, NULL, NULL),
+(110, 'server.beian_ga_num', 'null', 'string', 1, '公安备案号，填写null则不设置', NULL, NULL, NULL, NULL),
+(111, 'server.enable_mobile_register', 'false', 'boolean', 1, '是否开启手机注册', NULL, NULL, NULL, NULL),
+(112, 'server.sms_max_send_count', '10', 'number', 1, '单号码单日最大短信发送条数', NULL, NULL, NULL, NULL),
+(402, 'plugins.get_weather.api_host', 'mj7p3y7naa.re.qweatherapi.com', 'string', 1, '开发者apihost', NULL, NULL, NULL, NULL),
+(500, 'end_prompt.enable', 'true', 'boolean', 1, '是否开启结束语', NULL, NULL, NULL, NULL),
+(501, 'end_prompt.prompt', '请你以"时间过得真快"未来头，用富有感情、依依不舍的话来结束这场对话吧！', 'string', 1, '结束提示词', NULL, NULL, NULL, NULL),
+(610, 'aliyun.sms.access_key_id', '', 'string', 1, '阿里云平台access_key', NULL, NULL, NULL, NULL),
+(611, 'aliyun.sms.access_key_secret', '', 'string', 1, '阿里云平台access_key_secret', NULL, NULL, NULL, NULL),
+(612, 'aliyun.sms.sign_name', '', 'string', 1, '阿里云短信签名', NULL, NULL, NULL, NULL),
+(613, 'aliyun.sms.sms_code_template_code', '', 'string', 1, '阿里云短信模板', NULL, NULL, NULL, NULL);
+
+-- Update existing parameter remark
+UPDATE sys_params SET remark = '是否允许管理员以外的人注册' WHERE param_code = 'server.allow_user_register';
+
+-- Initialize TTS Voices
+-- ---------------------
+
+-- Delete existing TTS voice data
+DELETE FROM ai_tts_voice WHERE tts_model_id IN ('TTS_EdgeTTS', 'TTS_CosyVoiceSiliconflow');
+
+-- Insert Edge TTS voices
+INSERT INTO ai_tts_voice (id, tts_model_id, voice_name, voice_id, language, style, style_degree, sort, creator, create_date, updater, update_date) VALUES
+('TTS_EdgeTTS0001', 'TTS_EdgeTTS', 'EdgeTTS女声-晓晓', 'zh-CN-XiaoxiaoNeural', '普通话', NULL, NULL, 1, NULL, NULL, NULL, NULL),
+('TTS_EdgeTTS0002', 'TTS_EdgeTTS', 'EdgeTTS男声-云扬', 'zh-CN-YunyangNeural', '普通话', NULL, NULL, 1, NULL, NULL, NULL, NULL),
+('TTS_EdgeTTS0003', 'TTS_EdgeTTS', 'EdgeTTS女声-晓伊', 'zh-CN-XiaoyiNeural', '普通话', NULL, NULL, 1, NULL, NULL, NULL, NULL),
+('TTS_EdgeTTS0004', 'TTS_EdgeTTS', 'EdgeTTS男声-云健', 'zh-CN-YunjianNeural', '普通话', NULL, NULL, 1, NULL, NULL, NULL, NULL),
+('TTS_EdgeTTS0005', 'TTS_EdgeTTS', 'EdgeTTS男声-云希', 'zh-CN-YunxiNeural', '普通话', NULL, NULL, 1, NULL, NULL, NULL, NULL),
+('TTS_EdgeTTS0006', 'TTS_EdgeTTS', 'EdgeTTS男声-云夏', 'zh-CN-YunxiaNeural', '普通话', NULL, NULL, 1, NULL, NULL, NULL, NULL),
+('TTS_EdgeTTS0007', 'TTS_EdgeTTS', 'EdgeTTS女声-辽宁小贝', 'zh-CN-liaoning-XiaobeiNeural', '辽宁', NULL, NULL, 1, NULL, NULL, NULL, NULL),
+('TTS_EdgeTTS0008', 'TTS_EdgeTTS', 'EdgeTTS女声-陕西小妮', 'zh-CN-shaanxi-XiaoniNeural', '陕西', NULL, NULL, 1, NULL, NULL, NULL, NULL),
+('TTS_EdgeTTS0009', 'TTS_EdgeTTS', 'EdgeTTS女声-香港海佳', 'zh-HK-HiuGaaiNeural', '粤语', 'General', 'Friendly, Positive', 1, NULL, NULL, NULL, NULL),
+('TTS_EdgeTTS0010', 'TTS_EdgeTTS', 'EdgeTTS女声-香港海曼', 'zh-HK-HiuMaanNeural', '粤语', 'General', 'Friendly, Positive', 1, NULL, NULL, NULL, NULL),
+('TTS_EdgeTTS0011', 'TTS_EdgeTTS', 'EdgeTTS男声-香港万龙', 'zh-HK-WanLungNeural', '粤语', 'General', 'Friendly, Positive', 1, NULL, NULL, NULL, NULL);
+
+-- Insert CosyVoice Siliconflow TTS voices
+INSERT INTO ai_tts_voice (id, tts_model_id, voice_name, voice_id, language, sample_url, sort, creator, create_date, updater, update_date) VALUES
+('TTS_CosyVoiceSiliconflow0001', 'TTS_CosyVoiceSiliconflow', 'CosyVoice男声', 'FunAudioLLM/CosyVoice2-0.5B:alex', '中文', 'https://example.com/cosyvoice/alex.mp3', 6, NULL, NULL, NULL, NULL),
+('TTS_CosyVoiceSiliconflow0002', 'TTS_CosyVoiceSiliconflow', 'CosyVoice女声', 'FunAudioLLM/CosyVoice2-0.5B:bella', '中文', 'https://example.com/cosyvoice/bella.mp3', 6, NULL, NULL, NULL, NULL);

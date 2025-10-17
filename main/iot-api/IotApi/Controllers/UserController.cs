@@ -10,10 +10,10 @@ namespace IotApi.Controllers
     /// 用户控制器
     /// </summary>
     [ApiController]
-    [Route("xiaozhi/[controller]")]
-    [Produces("application/json")]
-    [Tags("用户管理")]
-    public class UserController : ControllerBase
+[Route("xiaozhi/user-management")]
+[Produces("application/json")]
+[Tags("用户管理")]
+public class UserController : ControllerBase
     {
         private readonly ISecurityService _securityService;
 
@@ -78,43 +78,26 @@ namespace IotApi.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
-            // Check if user already exists
-            var existingUser = await _context.SysUsers
-                .FirstOrDefaultAsync(u => u.Username == registerDto.Username);
-                
-            if (existingUser != null)
+            if (!ModelState.IsValid)
             {
-                return BadRequest("User already exists");
+                return BadRequest(new { code = 1, msg = "请求参数错误" });
             }
-            
-            // Create new user
-            var user = new SysUser
+
+            try
             {
-                Id = new Random().NextInt64(1000000, 9999999),
-                Username = registerDto.Username,
-                Password = registerDto.Password, // In a real app, hash the password
-                CreateDate = DateTime.UtcNow,
-                UpdateDate = DateTime.UtcNow,
-                Status = 1
-            };
-            
-            _context.SysUsers.Add(user);
-            await _context.SaveChangesAsync();
-            
-            return Ok();
+                var isAllowed = await _securityService.IsUserRegistrationAllowedAsync();
+                if (!isAllowed)
+                {
+                    return BadRequest(new { code = 1, msg = "用户注册已禁用" });
+                }
+
+                var result = await _securityService.RegisterAsync(registerDto);
+                return Ok(new { code = 0 });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { code = 1, msg = ex.Message });
+            }
         }
     }
-
-    // DTOs for the controller
-    //public class LoginDto
-    //{
-    //    public string Username { get; set; }
-    //    public string Password { get; set; }
-    //}
-
-    //public class RegisterDto
-    //{
-    //    public string Username { get; set; }
-    //    public string Password { get; set; }
-    //}
 }

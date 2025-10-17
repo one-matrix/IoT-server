@@ -16,11 +16,24 @@ namespace IotApi.Controllers
     [Tags("智能体管理")]
     public class AgentController : ControllerBase
     {
+        private readonly ApplicationDbContext _context;
         private readonly IAgentService _agentService;
+        private readonly IAgentChatAudioService _agentChatAudioService;
+        private readonly IRedisService _redisService;
+        private readonly ILogger<AgentController> _logger;
 
-        public AgentController(IAgentService agentService)
+        public AgentController(
+            ApplicationDbContext context, 
+            IAgentService agentService,
+            IAgentChatAudioService agentChatAudioService,
+            IRedisService redisService,
+            ILogger<AgentController> logger)
         {
+            _context = context;
             _agentService = agentService;
+            _agentChatAudioService = agentChatAudioService;
+            _redisService = redisService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -146,11 +159,34 @@ namespace IotApi.Controllers
         [HttpPut("saveMemory/{macAddress}")]
         public async Task<IActionResult> UpdateByDeviceId(string macAddress, AgentMemoryDto dto)
         {
-            // In a real implementation, we would:
-            // 1. Get device by MAC address
-            // 2. Update agent memory
-            // For now, we'll just return a success response
-            return Ok(new { code = 0 });
+            try
+            {
+                // 根据MAC地址获取设备
+                var device = await _context.Devices.FirstOrDefaultAsync(d => d.MacAddress == macAddress);
+                if (device == null)
+                {
+                    return NotFound(new { code = 404, msg = "设备不存在" });
+                }
+
+                // 更新智能体记忆
+                var agent = await _context.AiAgents.FirstOrDefaultAsync(a => a.Id == device.AgentId);
+                if (agent == null)
+                {
+                    return NotFound(new { code = 404, msg = "智能体不存在" });
+                }
+
+                // 更新记忆
+                agent.SummaryMemory = dto.SummaryMemory;
+                _context.AiAgents.Update(agent);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { code = 0 });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新智能体记忆失败，macAddress={MacAddress}", macAddress);
+                return StatusCode(500, new { code = 500, msg = "更新智能体记忆失败" });
+            }
         }
 
         // GET: xiaozhi/agent/template
@@ -200,33 +236,83 @@ namespace IotApi.Controllers
         [HttpGet("{id}/chat-history/audio")]
         public async Task<IActionResult> GetContentByAudioId(string id)
         {
-            // In a real implementation, we would:
-            // 1. Get audio content by ID
-            // For now, we'll return a placeholder response
-            return Ok(new { code = 0, data = "" });
+            try
+            {
+                // 获取音频内容
+                var audioData = await _agentChatAudioService.GetAudioAsync(id);
+                if (audioData == null)
+                {
+                    return NotFound(new { code = 404, msg = "音频不存在" });
+                }
+                
+                // 将音频数据转换为Base64字符串
+                string base64Audio = Convert.ToBase64String(audioData);
+                return Ok(new { code = 0, data = base64Audio });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "获取音频内容失败，audioId={AudioId}", id);
+                return StatusCode(500, new { code = 500, msg = "获取音频内容失败" });
+            }
         }
 
         // POST: xiaozhi/agent/audio/{audioId}
         [HttpPost("audio/{audioId}")]
         public async Task<IActionResult> GetAudioId(string audioId)
         {
-            // In a real implementation, we would:
-            // 1. Get audio data
-            // 2. Generate and store UUID in Redis
-            // 3. Return the UUID
-            var uuid = Guid.NewGuid().ToString();
-            return Ok(new { code = 0, data = uuid });
+            try
+            {
+                // 获取音频数据
+                var audioData = await _agentChatAudioService.GetAudioAsync(audioId);
+                if (audioData == null)
+                {
+                    return NotFound(new { code = 404, msg = "音频不存在" });
+                }
+                
+                // 生成UUID并存储在Redis中
+                var uuid = Guid.NewGuid().ToString();
+                await _redisService.SetStringAsync($"agent:audio:{uuid}", audioId, TimeSpan.FromMinutes(30));
+                
+                return Ok(new { code = 0, data = uuid });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "获取音频ID失败，audioId={AudioId}", audioId);
+                return StatusCode(500, new { code = 500, msg = "获取音频ID失败" });
+            }
         }
 
         // GET: xiaozhi/agent/play/{uuid}
         [HttpGet("play/{uuid}")]
         public async Task<IActionResult> PlayAudio(string uuid)
         {
-            // In a real implementation, we would:
-            // 1. Get audio ID from Redis using uuid
-            // 2. Retrieve audio data
-            // 3. Return audio file for playback
-            return Ok(new { code = 0, msg = "Play audio" });
+            try
+            {
+                // 从Redis获取音频ID
+                var audioId = await _redisService.GetStringAsync($"agent:audio:{uuid}");
+                if (string.IsNullOrEmpty(audioId))
+                {
+                    return NotFound(new { code = 404, msg = "音频链接不存在或已过期" });
+                }
+
+                // 获取音频数据
+                var audioData = await _agentChatAudioService.GetAudioAsync(audioId);
+                if (audioData == null)
+                {
+                    return NotFound(new { code = 404, msg = "音频不存在" });
+                }
+
+                // 删除Redis中的记录，确保链接只能使用一次
+                await _redisService.RemoveAsync($"agent:audio:{uuid}");
+
+                // 返回音频文件
+                return File(audioData, "audio/wav", "play.wav");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "播放音频失败，uuid={Uuid}", uuid);
+                return StatusCode(500, new { code = 500, msg = "播放音频失败" });
+            }
         }
 
         private bool AgentExists(string id)

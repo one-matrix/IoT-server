@@ -15,13 +15,13 @@ namespace IotApi.Controllers
     [Tags("字典类型管理")]
     public class SysDictTypeController : ControllerBase
     {
-        private readonly ISysService _sysService;
+        private readonly ISysParamsService _sysService;
 
         /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="sysService">系统服务</param>
-        public SysDictTypeController(ISysService sysService)
+        public SysDictTypeController(ISysParamsService sysService)
         {
             _sysService = sysService;
         }

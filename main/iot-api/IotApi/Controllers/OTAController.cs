@@ -88,8 +88,28 @@ namespace IotApi.Controllers
         [HttpGet]
         public ActionResult<string> GetOTA()
         {
-            // 简单返回服务状态
-            return Ok("OTA接口运行正常");
+            // 检查MQTT网关配置
+            var mqttGateway = _deviceService.GetSystemParam("server.mqtt_gateway");
+            if (string.IsNullOrEmpty(mqttGateway))
+            {
+                return Ok("OTA接口不正常，缺少mqtt_gateway地址，请登录智控台，在参数管理找到【server.mqtt_gateway】配置");
+            }
+            
+            // 检查WebSocket配置
+            var wsUrl = _deviceService.GetSystemParam("server.websocket");
+            if (string.IsNullOrEmpty(wsUrl) || wsUrl == "null")
+            {
+                return Ok("OTA接口不正常，缺少websocket地址，请登录智控台，在参数管理找到【server.websocket】配置");
+            }
+            
+            // 检查OTA地址配置
+            var otaUrl = _deviceService.GetSystemParam("server.ota");
+            if (string.IsNullOrEmpty(otaUrl) || otaUrl == "null")
+            {
+                return Ok("OTA接口不正常，缺少ota地址，请登录智控台，在参数管理找到【server.ota】配置");
+            }
+            
+            return Ok("OTA接口运行正常，websocket集群数量：" + wsUrl.Split(';').Length);
         }
 
         private bool IsMacAddressValid(string macAddress)

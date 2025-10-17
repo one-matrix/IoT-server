@@ -62,7 +62,7 @@ namespace IotApi.Controllers
 
         // POST: xiaozhi/agent/template
         [HttpPost]
-        public async Task<ActionResult<object>> CreateAgentTemplate(AiAgentTemplate template)
+        public async Task<ActionResult<object>> CreateAgentTemplate(AgentTemplate template)
         {
             // Generate ID if not provided
             if (string.IsNullOrEmpty(template.Id))
@@ -83,7 +83,7 @@ namespace IotApi.Controllers
 
         // PUT: xiaozhi/agent/template
         [HttpPut]
-        public async Task<ActionResult<object>> UpdateAgentTemplate(AiAgentTemplate template)
+        public async Task<ActionResult<object>> UpdateAgentTemplate(AgentTemplate template)
         {
             template.UpdatedAt = DateTime.UtcNow;
 

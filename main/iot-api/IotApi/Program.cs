@@ -20,10 +20,18 @@ builder.Services.AddHealthChecks()
 
 // Register application services
 builder.Services.AddScoped<ITimbreService, TimbreService>();
-builder.Services.AddScoped<IModelService, ModelService>();
+builder.Services.AddScoped<IModelConfigService, ModelConfigService>();
 builder.Services.AddScoped<IConfigService, ConfigService>();
-builder.Services.AddScoped<ISysService, SysService>();
+builder.Services.AddScoped<ISysParamsService, SysParamsService>();
 builder.Services.AddScoped<ISecurityService, SecurityService>();
+
+// Register newly implemented services
+builder.Services.AddScoped<IAgentMcpAccessPointService, AgentMcpAccessPointService>();
+builder.Services.AddScoped<IAgentChatAudioService, AgentChatAudioService>();
+builder.Services.AddScoped<IAgentTemplateService, AgentTemplateService>();
+builder.Services.AddScoped<IAgentPluginMappingService, AgentPluginMappingService>();
+builder.Services.AddScoped<ISmsService, SmsService>();
+builder.Services.AddScoped<IOtaService, OtaService>();
 
 // Add CORS
 builder.Services.AddCors(options =>

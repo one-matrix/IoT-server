@@ -14,13 +14,13 @@ namespace IotApi.Controllers
     [Tags("系统参数管理")]
     public class SysParamsController : ControllerBase
     {
-        private readonly ISysService _sysService;
+        private readonly ISysParamsService _sysService;
 
         /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="sysService">系统服务</param>
-        public SysParamsController(ISysService sysService)
+        public SysParamsController(ISysParamsService sysService)
         {
             _sysService = sysService;
         }

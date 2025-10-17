@@ -16,11 +16,13 @@ namespace IotApi.Controllers
     [Tags("模型管理")]
     public class ModelController : ControllerBase
     {
-        private readonly IModelService _modelService;
+        private readonly IModelConfigService _modelService;
+        private readonly ApplicationDbContext _context;
 
-        public ModelController(IModelService modelService)
+        public ModelController(IModelConfigService modelService, ApplicationDbContext context)
         {
             _modelService = modelService;
+            _context = context;
         }
 
         /// <summary>
@@ -135,6 +137,10 @@ namespace IotApi.Controllers
             {
                 return NotFound(new { code = 1, msg = "模型配置不存在" });
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { code = 1, msg = ex.Message });
+            }
         }
 
         /// <summary>
@@ -153,6 +159,10 @@ namespace IotApi.Controllers
             catch (KeyNotFoundException)
             {
                 return NotFound(new { code = 1, msg = "模型配置不存在" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { code = 1, msg = ex.Message });
             }
         }
 
@@ -195,7 +205,11 @@ namespace IotApi.Controllers
             }
         }
 
-        // PUT: xiaozhi/models/default/{id}
+        /// <summary>
+        /// 设置默认模型
+        /// </summary>
+        /// <param name="id">模型配置ID</param>
+        /// <returns>操作结果</returns>
         [HttpPut("default/{id}")]
         public async Task<IActionResult> SetDefaultModel(string id)
         {
@@ -227,7 +241,12 @@ namespace IotApi.Controllers
             return Ok(new { code = 0 });
         }
 
-        // GET: xiaozhi/models/{modelId}/voices
+        /// <summary>
+        /// 获取音色列表
+        /// </summary>
+        /// <param name="modelId">模型ID</param>
+        /// <param name="voiceName">音色名称（可选）</param>
+        /// <returns>音色列表</returns>
         [HttpGet("{modelId}/voices")]
         public async Task<ActionResult<IEnumerable<object>>> GetVoiceList(string modelId, [FromQuery] string voiceName = null)
         {
@@ -247,10 +266,32 @@ namespace IotApi.Controllers
                 
             return Ok(new { code = 0, data = voices });
         }
-
-        private bool ModelConfigExists(string id)
+        
+        /// <summary>
+        /// 根据ID获取模型名称
+        /// </summary>
+        /// <param name="id">模型ID</param>
+        /// <returns>模型名称</returns>
+        [HttpGet("name/{id}")]
+        public async Task<ActionResult<string>> GetModelNameById(string id)
         {
-            return _context.AiModelConfigs.Any(e => e.Id == id);
+            var name = await _modelService.GetModelNameByIdAsync(id);
+            if (name == null)
+            {
+                return NotFound(new { code = 1, msg = "模型配置不存在" });
+            }
+            return Ok(new { code = 0, data = name });
+        }
+        
+        /// <summary>
+        /// 获取TTS平台列表
+        /// </summary>
+        /// <returns>TTS平台列表</returns>
+        [HttpGet("tts/platforms")]
+        public async Task<ActionResult<IEnumerable<object>>> GetTtsPlatformList()
+        {
+            var platforms = await _modelService.GetTtsPlatformListAsync();
+            return Ok(new { code = 0, data = platforms });
         }
     }
 }

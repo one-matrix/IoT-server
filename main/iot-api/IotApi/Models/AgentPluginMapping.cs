@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -35,5 +36,12 @@ namespace IotApi.Models
         
         [Column("updated_at")]
         public DateTime? UpdatedAt { get; set; }
+        
+        [StringLength(64)]
+        [Column("provider_code")]
+        public string ProviderCode { get; set; }
+        
+        [Column("param_info")]
+        public string ParamInfo { get; set; }
     }
 }

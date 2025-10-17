@@ -9,6 +9,12 @@ namespace IotApi.Services
     public interface IDeviceService
     {
         /// <summary>
+        /// 获取系统参数值
+        /// </summary>
+        /// <param name="paramCode">参数代码</param>
+        /// <returns>参数值</returns>
+        string GetSystemParam(string paramCode);
+        /// <summary>
         /// 检查设备是否激活
         /// </summary>
         /// <param name="macAddress">MAC地址</param>
@@ -41,6 +47,13 @@ namespace IotApi.Services
         /// <param name="userId">用户ID</param>
         /// <returns>是否激活成功</returns>
         Task<bool> DeviceActivationAsync(string agentId, string deviceCode, long userId);
+
+        /// <summary>
+        /// 根据设备ID获取设备代码
+        /// </summary>
+        /// <param name="deviceId">设备ID</param>
+        /// <returns>设备代码</returns>
+        Task<string> GetCodeByDeviceIdAsync(string deviceId);
 
         /// <summary>
         /// 根据MAC地址获取设备信息

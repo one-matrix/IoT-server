@@ -20,15 +20,15 @@ public class ApplicationDbContext : DbContext
     public DbSet<AiTtsVoice> AiTtsVoices { get; set; }
 
     // Agent tables
-    public DbSet<AiAgentTemplate> AiAgentTemplates { get; set; }
-    public DbSet<AiAgent> AiAgents { get; set; }
+    public DbSet<AgentTemplate> AiAgentTemplates { get; set; }
+    public DbSet<Agent> AiAgents { get; set; }
 
     // Device tables
     public DbSet<AiDevice> AiDevices { get; set; }
     public DbSet<AiOta> AiOtas { get; set; }
 
     // Voiceprint tables
-    public DbSet<AiVoiceprint> AiVoiceprints { get; set; }
+    public DbSet<AgentVoicePrint> AgentVoicePrint { get; set; }
     public DbSet<AiVoiceClone> AiVoiceClones { get; set; }
 
     // Chat history tables
@@ -48,13 +48,13 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<AiModelConfig>().Property(e => e.Id).ValueGeneratedNever();
         modelBuilder.Entity<AiTtsVoice>().Property(e => e.Id).ValueGeneratedNever();
 
-        modelBuilder.Entity<AiAgentTemplate>().Property(e => e.Id).ValueGeneratedNever();
-        modelBuilder.Entity<AiAgent>().Property(e => e.Id).ValueGeneratedNever();
+        modelBuilder.Entity<AgentTemplate>().Property(e => e.Id).ValueGeneratedNever();
+        modelBuilder.Entity<Agent>().Property(e => e.Id).ValueGeneratedNever();
 
         modelBuilder.Entity<AiDevice>().Property(e => e.Id).ValueGeneratedNever();
         modelBuilder.Entity<AiOta>().Property(e => e.Id).ValueGeneratedNever();
 
-        modelBuilder.Entity<AiVoiceprint>().Property(e => e.Id).ValueGeneratedNever();
+        modelBuilder.Entity<AgentVoicePrint>().Property(e => e.Id).ValueGeneratedNever();
         modelBuilder.Entity<AiVoiceClone>().Property(e => e.Id).ValueGeneratedNever();
 
         modelBuilder.Entity<AiChatHistory>().Property(e => e.Id).ValueGeneratedNever();

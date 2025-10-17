@@ -4,6 +4,9 @@ using IotApi.Models;
 using IotApi.Services;
 using IotApi.DTOs;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.DependencyInjection;
+using System.Net.Http;
+using System.Net.Http.Json;
 
 namespace IotApi.Controllers
 {
@@ -17,10 +20,12 @@ namespace IotApi.Controllers
     public class DeviceController : ControllerBase
     {
         private readonly IDeviceService _deviceService;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
 
-        public DeviceController(IDeviceService deviceService)
+        public DeviceController(IDeviceService deviceService, IServiceScopeFactory serviceScopeFactory)
         {
             _deviceService = deviceService;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
         /// <summary>
@@ -54,8 +59,28 @@ namespace IotApi.Controllers
             var random = new Random();
             var code = random.Next(100000, 999999).ToString();
             
-            // 实际实现中应该将验证码存储在Redis中
-            // 这里简化处理，直接返回验证码
+            // 将验证码存储在Redis中
+            string key = $"device:captcha:{code}";
+            string existsMac = null;
+            
+            // 确保生成的验证码是唯一的
+            using (var scope = _serviceScopeFactory.CreateScope())
+            {
+                var redisService = scope.ServiceProvider.GetRequiredService<IRedisService>();
+                do
+                {
+                    existsMac = await redisService.GetStringAsync(key);
+                    if (!string.IsNullOrEmpty(existsMac))
+                    {
+                        code = random.Next(100000, 999999).ToString();
+                        key = $"device:captcha:{code}";
+                    }
+                } while (!string.IsNullOrEmpty(existsMac));
+                
+                // 设置验证码，有效期30分钟
+                await redisService.SetStringAsync(key, deviceRegisterDto.MacAddress, TimeSpan.FromMinutes(30));
+            }
+            
             return Ok(new { code = 0, data = code });
         }
 
@@ -79,13 +104,34 @@ namespace IotApi.Controllers
         /// <param name="requestBody">请求体</param>
         /// <returns>转发结果</returns>
         [HttpPost("bind/{agentId}")]
-        public async Task<ActionResult<object>> ForwardToMqttGateway(string agentId, [FromBody] string requestBody)
+        public async Task<ActionResult<object>> ForwardToMqttGateway(string agentId, [FromBody] object requestBody)
         {
             try
             {
-                // 实际实现中应该从系统参数获取MQTT网关地址并转发请求
-                // 这里简化处理，直接返回成功响应
-                return Ok(new { code = 0, data = "请求转发成功" });
+                // 从系统参数获取MQTT网关地址
+                string mqttGatewayUrl = _deviceService.GetSystemParam("MQTT_GATEWAY_URL");
+                if (string.IsNullOrEmpty(mqttGatewayUrl))
+                {
+                    return BadRequest(new { code = 1, msg = "MQTT网关地址未配置" });
+                }
+
+                // 创建HTTP客户端
+                using (var httpClient = new HttpClient())
+                {
+                    // 设置超时时间
+                    httpClient.Timeout = TimeSpan.FromSeconds(10);
+                    
+                    // 发送请求到MQTT网关
+                    var response = await httpClient.PostAsJsonAsync($"{mqttGatewayUrl}/api/forward/{agentId}", requestBody);
+                    
+                    // 确保请求成功
+                    response.EnsureSuccessStatusCode();
+                    
+                    // 读取响应内容
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    
+                    return Ok(new { code = 0, data = responseContent });
+                }
             }
             catch (Exception ex)
             {
@@ -154,13 +200,41 @@ namespace IotApi.Controllers
         /// <param name="command">指令内容</param>
         /// <returns>发送结果</returns>
         [HttpPost("commands/{deviceId}")]
-        public async Task<IActionResult> SendDeviceCommand(string deviceId, [FromBody] string command)
+        public async Task<IActionResult> SendDeviceCommand(string deviceId, [FromBody] object command)
         {
             try
             {
-                // 实际实现中应该从系统参数获取MQTT网关地址并发送指令
-                // 这里简化处理，直接返回成功响应
-                return Ok(new { code = 0, data = "指令发送成功" });
+                // 从系统参数获取MQTT网关地址
+                string mqttGatewayUrl = _deviceService.GetSystemParam("MQTT_GATEWAY_URL");
+                if (string.IsNullOrEmpty(mqttGatewayUrl))
+                {
+                    return BadRequest(new { code = 1, msg = "MQTT网关地址未配置" });
+                }
+
+                // 创建HTTP客户端
+                using (var httpClient = new HttpClient())
+                {
+                    // 设置超时时间
+                    httpClient.Timeout = TimeSpan.FromSeconds(10);
+                    
+                    // 构建请求数据
+                    var requestData = new
+                    {
+                        deviceId = deviceId,
+                        command = command
+                    };
+                    
+                    // 发送请求到MQTT网关
+                    var response = await httpClient.PostAsJsonAsync($"{mqttGatewayUrl}/api/device/command", requestData);
+                    
+                    // 确保请求成功
+                    response.EnsureSuccessStatusCode();
+                    
+                    // 读取响应内容
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    
+                    return Ok(new { code = 0, data = responseContent });
+                }
             }
             catch (Exception ex)
             {
