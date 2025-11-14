@@ -13,6 +13,7 @@ from app.mqtt_client import mqtt_client
 # from app.udp_server import UdpServerProtocol
 from app.session_manager import session_manager
 from app.mqtt_server import MqttServer
+from app.mqtt_iot import mqtt_iot
 from config.logger import setup_logging
 from config.settings import load_config
 from config.config_loader import get_config_from_api
@@ -42,6 +43,8 @@ async def lifespan(app: FastAPI):
     server = MqttServer(loop)
     try:
         server.start()
+        mqtt_iot.connect()
+        mqtt_iot.start()
         # auth_key = config.get("manager-api", {}).get("secret", "")
         # if not auth_key or len(auth_key) == 0 or "你" in auth_key:
         #     auth_key = str(uuid.uuid4().hex)
@@ -181,6 +184,42 @@ async def ota_info(request: Request):
             "code": "460609",                  #激活码
             "message": "460609",  # 激活信息（含URL和激活码）
             "challenge": device_id   # 设备挑战码/标识符
+        },
+    }
+@app.post("/sys/config", tags=["Config"])
+async def config_info(request: Request):
+    headers = request.headers
+    device_id = headers.get("device-id")
+    client_id = headers.get("client-id","c2")
+    # 解析请求体（如有需要）
+    #body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else None
+    now = int(time.time() * 1000)
+    timezone_offset = 480
+    mqtt_config = config.get("mqtt", {})
+    # 获取endpoint和port，组合成IP:端口格式
+    mqtt_endpoint = mqtt_config.get("endpoint", "192.168.0.1")
+    mqtt_port = mqtt_config.get("port", "1883")
+    return {
+        "mqtt": {
+            "endpoint": f"{mqtt_endpoint}:{mqtt_port}",
+            # "port": mqtt_port,
+            "client_id":f"{client_id}",
+            "username": mqtt_config.get("username", "client_a"),
+            "password": mqtt_config.get("password", "J4h58G8l"),
+            "publish_topic": f"/devices/{device_id}/data",
+        },
+        "server_time": {
+            "timestamp": now,
+            "timezone_offset": timezone_offset
+        },
+        "parsed_headers": {
+            "Device-Id": device_id,
+            "Client-Id": client_id
+        },
+        "server_time": {
+            "timestamp": int(time.time() * 1000),       # 服务器时间戳（毫秒）
+            "timeZone": "Asia/Shanghai",       #时区标识
+            "timezone_offset": 480             # 时区偏移量（分钟）
         },
     }
 from app.mqtt_gateway import WebSocketAdapter 

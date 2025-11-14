@@ -81,3 +81,21 @@ MQTT 客户端: paho-mqtt (最流行和稳定的 Python MQTT 库)
 原来的链接 ：
 http://127.0.0.1:38005/yzy/ota/
 ws://127.0.0.1:38005/yzy/v1/
+
+
+获取OTA 信息：
+curl 'http://localhost:8002/xiaozhi/ota/' \
+  -H 'Content-Type: application/json' \
+  -H 'Client-Id: 7b94d69a-9808-4c59-9c9b-704333b38aff' \
+  -H 'Device-Id: 11:22:33:44:55:66' \
+  --data-raw $'{\n  "application": {\n    "version": "1.0.1",\n    "elf_sha256": "1"\n  },\n  "board": {\n    "mac": "11:22:33:44:55:66"\n  }\n}'
+
+
+curl 'https://iotweb.shyunzhiyi.cn:8443/xiaozhi/ota/' \
+  -H 'Content-Type: application/json' \
+  -H 'Client-Id: 7b94d69a-9808-4c59-9c9b-704333b38aff' \
+  -H 'Device-Id: 11:22:33:44:55:66' \
+  --data-raw $'{\n  "application": {\n    "version": "1.0.1",\n    "elf_sha256": "1"\n  },\n  "board": {\n    "mac": "11:22:33:44:55:66"\n  }\n}'
+
+  
+  
